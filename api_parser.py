@@ -19,8 +19,7 @@ def parse_main_doc(modules):
             if module_name.startswith('java'):
                 row = [module_name, module_link, description]
                 modules_writer.writerow(row)
-            
-            modules_dict[module_name] = module_link
+                modules_dict[module_name] = module_link
     return modules_dict
 
 # 1. parse root modules
@@ -31,4 +30,5 @@ overviewtable = soup.body.find('table', attrs={'class':'overviewSummary'})
 modules = overviewtable.find('tbody')
 module_dict = parse_main_doc(modules)
 
-print (module_dict)
+for key, value in module_dict.items():
+    print(key + ' -> ' + value)
