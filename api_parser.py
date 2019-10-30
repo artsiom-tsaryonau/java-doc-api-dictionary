@@ -20,8 +20,8 @@ def parse_main_doc(modules):
                 row = [module_name, module_link, description]
                 modules_writer.writerow(row)
             
-            modules[module_name] = module_link
-    return modules
+            modules_dict[module_name] = module_link
+    return modules_dict
 
 # 1. parse root modules
 url = base_url + 'index.html'
@@ -30,3 +30,5 @@ soup = BeautifulSoup(html, features='html.parser')
 overviewtable = soup.body.find('table', attrs={'class':'overviewSummary'})
 modules = overviewtable.find('tbody')
 module_dict = parse_main_doc(modules)
+
+print (module_dict)
