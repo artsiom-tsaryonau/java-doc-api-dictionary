@@ -15,7 +15,35 @@ logging.basicConfig(filename='parsing.log',
                     filemode='w', 
                     level=logging.DEBUG, 
                     format='%(levelname)s - %(message)s')
+class DefaultNamed:
+    def __init__(self, name):
+        self.name = name
 
+class Module(DefaultNamed):
+    def __init__(self, name):
+        DefaultNamed.__init__(self, name)
+        
+class Package(DefaultNamed):
+    def __init__(self, name):
+        DefaultNamed.__init__(self, name)
+        
+class Class(DefaultNamed):
+    def __init__(self, name):
+        DefaultNamed.__init__(self, name) 
+        
+class Interface(DefaultNamed):
+    def __init__(self, name):
+        DefaultNamed.__init__(self, name)
+        
+class Exception(DefaultNamed):
+    def __init__(self, name):
+        DefaultNamed.__init__(self, name)
+        
+class Enum(DefaultNamed):
+    def __init__(self, name):
+        DefaultNamed.__init__(self, name)
+        
+    
 def normalize_text(text):
     return re.sub(r'\n+', '', text)
     
