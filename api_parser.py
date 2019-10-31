@@ -7,6 +7,7 @@ MODULES_FILE_LIST_NAME = 'java11_modules.csv'
 MODULE_FILE_NAME_POSTFIX = '_module.csv'
 ALLOWED_MODULE = 'java'
 MODULES_TABLE_NAME = 'overviewSummary'
+IGNORED_TABLES = ['Indirect Exports']
 
 def normalize_text(text):
     return re.sub(r'\n+', '', text)
@@ -25,8 +26,7 @@ def parse_jdk_module_entry(entry):
     entry_description = normalize_text(content.text)
 
     return [entry_name, entry_link, entry_description]
-        
-# perform parallel processing of table entries
+
 def parse_jdk_module_overview_table(summary_table):
     overview_table = summary_table.find('tbody')
     list_result = []
@@ -72,17 +72,18 @@ def parse_jdk_module_page(module_name, module_page_link):
         # check if has <a id='packages.summary'>
         # can be multiple - difference in caption
         packages = soup.body.find_all('table', 
-                                  attrs={'class':'packagesSummary'})
+                                       attrs={'class':'packagesSummary'})
         process_packages(packages, module_content_writer)
+# !!!! IGNORE module dependencies for now
         # check if has <a id='services.summary'>
-        provides = soup.body.find('table',
-                                  attrs={'class':'providesSummary'})
-        uses = soup.body.find('table',
-                              attrs={'class':'usesSummary'})
+        #provides = soup.body.find('table',
+        #                           attrs={'class':'providesSummary'})
+        #uses = soup.body.find('table',
+        #                       attrs={'class':'usesSummary'})
         # check if has <a id='modules.summary'>
         # can be multiple - difference in caption
-        requires = soup.body.find_all('table',
-                                  attrs={'class':'requiresSummary'})
+        # requires = soup.body.find_all('table',
+        #                              attrs={'class':'requiresSummary'})
     
 def process_packages(packages, csv_writer):
     package_lists = parkse_jdk_module_packages(packages)
@@ -99,9 +100,14 @@ def parkse_jdk_module_packages(packages):
     
 def parse_jdk_module_package(package):
     list_result = []
-    for row in package.find_all('tr'):
-        if row.find('th').text != 'Package':
-            list_result.append(parse_jdk_module_package_entry(row))
+    
+    # check for table type
+# !!!! IGNORE [Indirect Exports] for now
+    table_name = package.select('caption span')[0].text
+    if (table_name not in IGNORED_TABLES):
+        for row in package.find_all('tr'):
+            if row.find('th').text != 'Package':
+                list_result.append(parse_jdk_module_package_entry(row))
     return list_result
         
 def parse_jdk_module_package_entry(entry):
@@ -109,13 +115,19 @@ def parse_jdk_module_package_entry(entry):
     content = entry.find('td')
         
     entry_name = header.text
+        
     entry_relative_link = header.find('a').get('href')
+    # some URI start with ../ for some reason
+    if entry_relative_link.startswith("../"):
+        entry_relative_link = entry_relative_link[3:]
     entry_link = create_direct_link(entry_relative_link)
     entry_description = normalize_text(content.text)
+    print(entry_name + ' : ' + entry_description)
     return [entry_name, entry_link, entry_description]
 
 # exec
 modules_dict = parse_jdk_modules_page()
 for key, value in modules_dict.items():
+    print('module: ' + key + ' |')
     parse_jdk_module_page(key, value)
-    break
+    print('====')
