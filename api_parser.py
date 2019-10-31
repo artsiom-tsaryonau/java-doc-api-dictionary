@@ -229,3 +229,7 @@ for key, value in modules_dict.items():
     break
 elapsed_seq_time = time.time() - start_seq_time
 print(elapsed_seq_time)
+
+# module, package, class
+# module, package, class
+# module, package, interface
