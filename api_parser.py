@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from multiprocessing import Pool
 import requests, csv, re
+import logging
 
 BASE_URL = 'https://docs.oracle.com/en/java/javase/11/docs/api/'
 MODULES_FILE_LIST_NAME = 'java11_modules.csv'
@@ -8,6 +9,11 @@ MODULE_FILE_NAME_POSTFIX = '_module.csv'
 ALLOWED_MODULE = 'java'
 MODULES_TABLE_NAME = 'overviewSummary'
 IGNORED_TABLES = ['Indirect Exports']
+
+logging.basicConfig(filename='parsing.log', 
+                    filemode='w', 
+                    level=logging.DEBUG, 
+                    format='%(levelname)s - %(message)s')
 
 def normalize_text(text):
     return re.sub(r'\n+', '', text)
@@ -122,12 +128,12 @@ def parse_jdk_module_package_entry(entry):
         entry_relative_link = entry_relative_link[3:]
     entry_link = create_direct_link(entry_relative_link)
     entry_description = normalize_text(content.text)
-    print(entry_name + ' : ' + entry_description)
+    logging.debug(entry_name + ' : ' + entry_description)
     return [entry_name, entry_link, entry_description]
 
 # exec
 modules_dict = parse_jdk_modules_page()
 for key, value in modules_dict.items():
-    print('module: ' + key + ' |')
+    logging.debug('module: ' + key + ' |')
     parse_jdk_module_page(key, value)
-    print('====')
+    logging.debug('====')
