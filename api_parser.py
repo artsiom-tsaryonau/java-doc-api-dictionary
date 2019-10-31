@@ -9,12 +9,14 @@ PACKAGE_FILE_NAME_PREFIX = 'package_'
 ALLOWED_MODULE = 'java'
 MODULES_TABLE_NAME = 'overviewSummary'
 IGNORED_TABLES = ['Indirect Exports']
-TYPES = ['Package', 'Class', 'Exception', 'Interface', 'Enum']
+TYPES = ['Package', 'Class', 'Exception', 'Interface', 'Enum', 'Error', 'Annotation Type']
 
 logging.basicConfig(filename='parsing.log', 
                     filemode='w', 
                     level=logging.DEBUG, 
                     format='%(levelname)s - %(message)s')
+
+# probably violates YAGNI for now but whatever
 class DefaultNamed:
     def __init__(self, name):
         self.name = name
@@ -42,7 +44,6 @@ class Exception(DefaultNamed):
 class Enum(DefaultNamed):
     def __init__(self, name):
         DefaultNamed.__init__(self, name)
-        
     
 def normalize_text(text):
     return re.sub(r'\n+', '', text)
@@ -166,30 +167,54 @@ def parse_jdk_package_page(package_name, package_page_link):
                                              quoting=csv.QUOTE_MINIMAL)
         types = soup.body.find_all('table',
                                    attrs={'class':'typeSummary'})
+                                   
+        type_dict = {}
         for type in types:
             table_name = type.select('caption span')[0].text
             if table_name.startswith('Class'):
                 logging.debug('\t\tClasses =>')
+                type_dict['class'] = parse_type_entries(type, package_page_link)
             elif table_name.startswith('Enum'):
                 logging.debug('\t\tEnums =>')
+                type_dict['enum'] = parse_type_entries(type, package_page_link)
             elif table_name.startswith('Interface'):
                 logging.debug('\t\tInterfaces =>')
-            else:
+                type_dict['interface'] = parse_type_entries(type, package_page_link)
+            elif table_name.startswith('Exception'):
                 logging.debug('\t\tException =>')
+                type_dict['exception'] = parse_type_entries(type, package_page_link)
+            elif table_name.startswith('Annotation Type'):
+                logging.debug('\t\tAnnotation Type =>')
+                type_dict['annotation'] = parse_type_entries(type, package_page_link)
+            else:
+                logging.debug('\t\tError =>')
+                type_dict['error'] = parse_type_entries(type, package_page_link)
                 
-            parse_type_entries(type)
+        print(type_dict)
               
-def parse_type_entries(type):
+def parse_type_entries(type, package_link):
+    list_result = []
     for entry in type.find_all('tr'):
         if entry.find('th').text not in TYPES:
-            parse_type_entry(entry)
+            list_result.append(parse_type_entry(entry, package_link))
+    return list_result
         
-def parse_type_entry(entry):
+def parse_type_entry(entry, package_link):
     header = entry.find('th')
     content = entry.find('td')
                     
     entry_name = header.text
     logging.debug('\t\t\t' + entry_name)
+
+    last_slash = package_link.rindex('/')
+    package_link_length = len(package_link)
+    to_slice = package_link_length - last_slash + 1
+
+    entry_relative_link = header.find('a').get('href')
+    entry_link = package_link[:-to_slice] + entry_relative_link
+    entry_description = normalize_text(content.text)
+    
+    return [entry_name, entry_link, entry_description]
     
 # pure sequential execution
 start_seq_time = time.time()
