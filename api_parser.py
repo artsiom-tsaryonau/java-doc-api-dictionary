@@ -1,20 +1,21 @@
-import time, csv
+import csv
 
 from multiprocessing import Pool
+from itertools import chain
 
 from index_parser import parse_jdk_modules
 from module_parser import parse_jdk_module
 from package_parser import parse_jdk_package
 
 # TODO: move to utils
-def __write_to_csv_file(filename, data_list):
+def __write_to_csv_file(filename, module_package_list):
     with open(filename, mode='w') as file:
         writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        for line in data_list:
-            writer.writerow(line)
+        for module_package_type_list in module_package_list:
+            for module_package_type in module_package_type_list:
+                writer.writerow(module_package_type)
 
 # parse index page
-start_time = time.time()
 modules = parse_jdk_modules(['java']) # result is [ java.base, link, description ]
 
 # parse each module page
@@ -23,19 +24,12 @@ with Pool(4) as p:
     # result is [ [java.base, link, description, java.io, link, description] ]
     module_packages_list = list(p.starmap(parse_jdk_module, modules_parameters))
 
-# TODO: paralellize
-# parse each package page
-final_list = []
-for module_packages in module_packages_list:
-    # list [ java.base, link, descr, java.io, link, descr ]
-    for module_package in module_packages:
-        # list [ java.base, link, descr, java.io, link, descr, type, Serializable, link descr ]
-        module_package_type = parse_jdk_package(module_package)
-        final_list += module_package_type
+with Pool(4) as p:
+    #  TODO: rework the way it returns lists
+    #  [
+    #    [ [ java.base ... java.lang .... Closeable ] [ java.base ... java.lang ... Closeable ] ],
+    #    [ [ java.base ... java.lang.annotation ... Closeable ] [ java.base ... java.lang.annotation ... Closeable ] ]
+    #  ]
+    final_list = p.map(parse_jdk_package, chain.from_iterable(module_packages_list))
     
-elapsed_time = time.time() - start_time
-print(elapsed_time)
-
-print('Saving to file...') 
 __write_to_csv_file('api_parsed.csv', final_list)
-print('Done')

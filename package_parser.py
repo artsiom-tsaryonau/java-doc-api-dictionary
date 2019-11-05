@@ -31,17 +31,18 @@ def parse_jdk_package(module):
     soup = BeautifulSoup(html, features='html.parser')
     # there are multiple types of object in the package
     types = soup.body.find_all('table', attrs={'class':'typeSummary'})
-    module_package_type_list = []
+    type_list_joined = []
     for type in types: # process each table type
         # [[exception, Exception, link, description]]
         type_list = __process_summary_table(type, package_page_link)
-        # [[java.base, link, description, java.io, link, description, exception, Exception, link, description]]
-        type_list = [module + type_list_entry for type_list_entry in type_list]
-        module_package_type_list += type_list # join the type list to other type lists
-    return module_package_type_list
+        
+        # join [ java.base ... java.io ... ] with [ exception, ClassException ... ]
+        for type_list_entry in type_list:
+            type_list_joined.append(module + type_list_entry)
+
+    return type_list_joined
     
 def __process_summary_table(type_list_table, package_page_link):
-    type_list = []
     table_name = type_list_table.select('caption span')[0].text
     if table_name.startswith('Class'):
         type_list = __process_type_table('class', type_list_table, package_page_link)
