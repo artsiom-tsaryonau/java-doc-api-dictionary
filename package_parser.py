@@ -3,6 +3,22 @@ import requests, re
 
 TYPES = ['Package', 'Class', 'Exception', 'Interface', 'Enum', 'Error', 'Annotation Type']
 
+# TODO: move to separate module
+def __validate_link(func):
+    def validate_link(table_row, package_link):
+        table_row = func(table_row, package_link) # reassign as we don't need inputs
+        link_to_check = table_row[1]
+        print('checking link...', link_to_check)
+        valid_link = False
+        with requests.get(link_to_check, stream=True) as response:
+            try:
+                response.raise_for_status()
+            except (Exception, error) as e:
+                print('Invalid link: ', link_to_check)
+            finally:
+                return table_row
+    return validate_link
+
 # TODO: move to separate method
 def __normalize_description(text):
     return re.sub(r'\n+', '', text)
@@ -48,6 +64,8 @@ def __process_type_table(type, type_list_table, package_link):
         types_list.append([type] + __process_summary_table_row(table_row, package_link))
     return types_list
     
+# this decorator affects performance, probably better to do that in a separate process 
+# @__validate_link
 def __process_summary_table_row(table_row, package_link):
     header = table_row.find('th')
     content = table_row.find('td')
@@ -66,3 +84,4 @@ def __process_summary_table_row(table_row, package_link):
     type_description = __normalize_description(content.text)
     
     return [type_name, type_link, type_description]
+ 
