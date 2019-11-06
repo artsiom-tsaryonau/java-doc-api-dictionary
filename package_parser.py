@@ -1,5 +1,8 @@
 from bs4 import BeautifulSoup
-import requests, re
+
+from support_utils import normalize_description
+
+import requests
 
 TYPES = ['Package', 'Class', 'Exception', 'Interface', 'Enum', 'Error', 'Annotation Type']
 
@@ -18,10 +21,6 @@ def __validate_link(func):
             finally:
                 return table_row
     return validate_link
-
-# TODO: move to separate method
-def __normalize_description(text):
-    return re.sub(r'\n+', '', text)
 
 def parse_jdk_package(module):
     # [module] is a list that looks like this 
@@ -70,7 +69,7 @@ def __process_summary_table_row(table_row, package_link):
     
     type_relative_link = header.find('a').get('href')
     type_link = package_link_slice + type_relative_link
-    type_description = __normalize_description(content.text)
+    type_description = normalize_description(content.text)
     
     return [type_name, type_link, type_description]
  

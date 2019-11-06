@@ -1,12 +1,11 @@
 from bs4 import BeautifulSoup
-import requests, re, itertools
+
+from support_utils import normalize_description
+
+import requests, itertools
 
 # TODO: made it a separate 
 BASE_JDK_URL = 'https://docs.oracle.com/en/java/javase/11/docs/api/'
-
-# TODO: move to separate method
-def __normalize_description(text):
-    return re.sub(r'\n+', '', text)
 
 # parses jdk modules and return the list of them
 def parse_jdk_modules(allowed_modules_masks):
@@ -38,6 +37,6 @@ def __process_summary_table_row(table_row):
     module_relative_link = header.find('a').get('href')
     module_link = BASE_JDK_URL + module_relative_link
     
-    module_description = __normalize_description(content.text)
+    module_description = normalize_description(content.text)
     # [ 'java.base'', '../summary.html', 'module used for ... ' ]
     return [module_name, module_link, module_description]
