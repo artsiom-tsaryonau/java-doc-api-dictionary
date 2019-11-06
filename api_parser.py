@@ -20,16 +20,18 @@ modules = parse_jdk_modules(['java']) # result is [ java.base, link, description
 
 # parse each module page
 modules_parameters = [(module, []) for module in modules]
-with Pool(4) as p:
-    # result is [ [java.base, link, description, java.io, link, description] ]
-    module_packages_list = list(p.starmap(parse_jdk_module, modules_parameters))
 
-with Pool(4) as p:
-    #  TODO: rework the way it returns lists
-    #  [
-    #    [ [ java.base ... java.lang .... Closeable ] [ java.base ... java.lang ... Closeable ] ],
-    #    [ [ java.base ... java.lang.annotation ... Closeable ] [ java.base ... java.lang.annotation ... Closeable ] ]
-    #  ]
+# PERFORMANCE MEASUREMENTES
+
+import time
+start_time = time.time()
+
+# parse each package page
+with Pool(6) as p:
+    module_packages_list = list(p.starmap(parse_jdk_module, modules_parameters))
     final_list = p.map(parse_jdk_package, chain.from_iterable(module_packages_list))
+    
+end_time = time.time()
+print('Consumed time ', end_time - start_time)
     
 __write_to_csv_file('api_parsed.csv', final_list)

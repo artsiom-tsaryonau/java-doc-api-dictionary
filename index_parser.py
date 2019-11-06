@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-import requests, re
+import requests, re, itertools
 
 # TODO: made it a separate 
 BASE_JDK_URL = 'https://docs.oracle.com/en/java/javase/11/docs/api/'
@@ -14,28 +14,23 @@ def parse_jdk_modules(allowed_modules_masks):
     soup = BeautifulSoup(html, features='html.parser')
     module_list_table = soup.body.find('table', attrs={'class':'overviewSummary'})
     
-    all_modules = __process_summary_table(module_list_table)
     # leave only allowed modules
-    all_modules = [module for module in all_modules 
+    all_modules = [module for module in __process_summary_table(module_list_table)
                           if __filter_modules(module[0], allowed_modules_masks)] 
     return all_modules
     
 def __filter_modules(module_name, allowed_modules_masks):
-    for mask in allowed_modules_masks:
-        if  module_name.startswith(mask):
-            return True
-    return False
+    return any(module_name.startswith(mask) for mask in allowed_modules_masks)
     
 def __process_summary_table(module_list_table):
     table_body = module_list_table.find('tbody')
     all_modules = []
-    for table_row  in table_body.find_all('tr'):
+    for table_row in table_body.find_all('tr'):
         all_modules.append(__process_summary_table_row(table_row))
     return all_modules
     
 def __process_summary_table_row(table_row):
-    header = table_row.find('th')
-    content = table_row.find('td')
+    header, content = table_row.find('th'), table_row.find('td')
     
     module_name = header.text
     

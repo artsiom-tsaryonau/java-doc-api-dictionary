@@ -29,17 +29,9 @@ def parse_jdk_package(module):
     package_page_link = module[4]
     html = requests.get(package_page_link).text
     soup = BeautifulSoup(html, features='html.parser')
-    # there are multiple types of object in the package
-    types = soup.body.find_all('table', attrs={'class':'typeSummary'})
     type_list_joined = []
-    for type in types: # process each table type
-        # [[exception, Exception, link, description]]
-        type_list = __process_summary_table(type, package_page_link)
-        
-        # join [ java.base ... java.io ... ] with [ exception, ClassException ... ]
-        for type_list_entry in type_list:
-            type_list_joined.append(module + type_list_entry)
-
+    for type in soup.body.find_all('table', attrs={'class':'typeSummary'}):
+        type_list_joined += [(module + type_list_entry) for type_list_entry in __process_summary_table(type, package_page_link)]
     return type_list_joined
     
 def __process_summary_table(type_list_table, package_page_link):
@@ -60,16 +52,12 @@ def __process_summary_table(type_list_table, package_page_link):
     
 def __process_type_table(type, type_list_table, package_link):
     table_body = type_list_table.find('tbody')
-    types_list = []
-    for table_row in table_body.find_all('tr'):
-        types_list.append([type] + __process_summary_table_row(table_row, package_link))
-    return types_list
+    return [([type] + __process_summary_table_row(table_row, package_link)) for table_row in table_body.find_all('tr')]
     
 # this decorator affects performance, probably better to do that in a separate process 
 # @__validate_link
 def __process_summary_table_row(table_row, package_link):
-    header = table_row.find('th')
-    content = table_row.find('td')
+    header, content = table_row.find('th'), table_row.find('td')
                     
     type_name = header.text
     
